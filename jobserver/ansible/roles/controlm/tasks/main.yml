@@ -1,0 +1,54 @@
+---
+#
+# to be indempotent, need to kill existing process and clean previous install
+#
+- name: kill existing process
+  shell: "ps ax | grep /opt/ctm-agt/ctm/exe/p_ctma | awk '{print $1;}' | xargs kill -9"
+  sudo: yes
+  ignore_errors: True
+
+- name: clear previous install
+  shell: "rm -fr /opt/ctm-agt/*"
+  sudo: yes
+
+- name: set net.ipv4.ip_local_port_range  
+  sysctl: name="net.ipv4.ip_local_port_range" value="1024 65535" sysctl_set=yes state=present reload=yes
+  sudo: yes
+
+- name: create directory ctmagt
+  shell: "mkdir -p /opt/ctmagt"
+  sudo: yes
+
+- name: copy controlm package
+  shell: "aws s3 cp s3://repository-infra/controlm/agent/DRKAI.8.0.00_Linux-x86_64.tar.Z /tmp/ --region eu-west-1"
+  sudo: yes
+
+- name: extract controlm package
+  command: tar xvzf DRKAI.8.0.00_Linux-x86_64.tar.Z chdir=/opt/ctm-agt/
+  sudo: yes
+
+- name: copy response file
+  template: src=response.xml dest=/opt/ctm-agt/
+  sudo: yes
+
+- name: install controlm
+  command: ./setup.sh -silent response.xml chdir=/opt/ctm-agt/
+  shell "export INSTALL_AGENT_LINUX_X86_64=Y"
+  sudo: yes
+
+- name: remove tar.Z
+  command: rm -f DRKAI.8.0.00_Linux-x86_64.tar.Z chdir=/opt/ctm-agt/
+  sudo: yes
+
+- name: kill existing process
+  shell: "ps ax | grep /opt/ctm-agt/ctm/exe/p_ctma | awk '{print $1;}' | xargs kill -9"
+  ignore_errors: True
+  sudo: yes
+
+- name: copy controlm agent init scrip
+  template: src=ctmagt dest=/etc/init.d/ mode=0755
+  sudo: yes
+
+- name: start controlm agent
+  sudo: yes
+  service: name=ctmagt enabled=yes state=started

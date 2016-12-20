@@ -1,0 +1,8 @@
+---
+- name: Install newrelic agent library on tomcat
+  command: aws s3 cp s3://applications.dev/newrelic/3.11.0/newrelic.jar /opt/tomcat/lib/ --region eu-west-1
+  sudo: True
+
+- name: Copy newrelic config file
+  copy: src=newrelic.yml dest=/opt/tomcat/lib/ owner=tomcat group=tomcat
+  sudo: True

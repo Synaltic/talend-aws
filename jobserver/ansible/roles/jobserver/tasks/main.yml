@@ -1,0 +1,15 @@
+---
+- name: copy jobserver bin package
+  copy: src=Talend-JobServer-20160704_1411-V6.2.1.zip dest=/tmp/
+- name: extract jobserver bin package
+  command: unzip -d /opt/jobserver /tmp/Talend-JobServer-20160704_1411-V6.2.1.zip
+- name: copy runjob sh
+  copy: src=run_job.sh dest=/opt/jobserver/ mode=0755
+- name: add user ec2-user jobserver bin packag
+  command: chown -R ec2-user.ec2-user /opt/jobserver
+- name: copy jobserver sh
+  copy: src=jobserver dest=/etc/init.d/ mode=0755
+- name: chkconfig list services
+  command: chkconfig --add jobserver
+- name: start jobserver services
+  service: name=jobserver state=started

@@ -1,0 +1,20 @@
+---
+- name: Install the MySQL packages
+  yum: name=http://repo.mysql.com//mysql57-community-release-el6-9.noarch.rpm state=present
+- yum: name=mysql-community-server state=installed
+#  yum: name=mysql-server.x86_64 state=installed update_cache=yes
+#- name: Stop mysqld if runing
+#  service: name=mysqld state=stopped
+#- name: Start mysql safe mode
+#  shell: mysqld_safe --skip-grant-tables &
+- name: Change password of root account
+  command: mysqladmin password "{{ mysql_pwd }}"
+#  command: mysql -uroot mysql -e "update user set password=PASSWORD('{{ mysql_pwd }}') where User='root';"
+#- name: flush privileges
+#  command: mysql -uroot information_schema -e "flush privileges;"
+- name: Stop mysqld
+  service: name=mysqld state=stopped
+- name: Start mysql at system boot
+  service: name=mysqld enabled=yes
+- name: Start mysqld
+  service: name=mysqld state=started

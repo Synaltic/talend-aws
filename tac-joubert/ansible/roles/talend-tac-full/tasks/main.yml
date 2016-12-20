@@ -1,0 +1,30 @@
+---
+- name: create mysql talend user
+  command:  mysql -uroot -p{{ mysql_pwd }} mysql -e "CREATE USER 'talend'@'%' IDENTIFIED BY 't@lendP@ssw0rd!';"
+- name: grant all privileges to talend user
+  command: mysql -uroot -p{{ mysql_pwd }} mysql -e "GRANT ALL ON *.* TO 'talend'@'%';"
+- name: create talend_tac database
+  command: mysql -utalend -pt@lendP@ssw0rd! -e "CREATE DATABASE talend_tac;"
+- name: create /opt/install folder and download installation files from S3
+  command: mkdir /opt/install
+- command: aws s3 cp s3://applications.dev/Talend/6.2.1/cfg_install_tac_621.txt /opt/install
+  environment: '{{ awsenv }}'
+- command: aws s3 cp s3://applications.dev/Talend/6.2.1/license /opt/install
+  environment: '{{ awsenv }}'
+- command: aws s3 cp s3://applications.dev/Talend/6.2.1/Talend-Tools-Installer-20160704_1411-V6.2.1-linux64-installer.run /opt/install
+  environment: '{{ awsenv }}'
+- command: aws s3 cp s3://applications.dev/Talend/6.2.1/mysql-connector-java-5.1.39-bin.jar /opt/install
+  environment: '{{ awsenv }}'
+- command: aws s3 cp s3://applications.dev/Talend/6.2.1/dist /opt/install
+  environment: '{{ awsenv }}'
+- command: chmod +x /opt/install/Talend-Tools-Installer-20160704_1411-V6.2.1-linux64-installer.run
+- name: installation talend server
+  command: /opt/install/Talend-Tools-Installer-20160704_1411-V6.2.1-linux64-installer.run --optionfile /opt/install/cfg_install_tac_621.txt
+- name: add mysql driver to tomcat
+  command: cp /opt/install/mysql-connector-java-5.1.39-bin.jar /opt/talend621/tac/apache-tomcat/lib/
+- name: set owner
+  command: chown talenduser:talendgroup /opt/talend621/tac/apache-tomcat/lib/mysql-connector-java-5.1.39-bin.jar
+- name: restart tac for driver
+  service: name=talend-tac-6.2.1 state=restarted
+- name: clean install folder
+  command: rm -rf /opt/install

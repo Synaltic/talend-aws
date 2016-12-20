@@ -1,0 +1,5 @@
+---
+
+- lineinfile: dest=/etc/sysctl.conf line="net.ipv4.tcp_keepalive_time = 1800"
+- lineinfile: dest=/etc/sysctl.conf line="net.ipv4.tcp_keepalive_intvl = 120"
+- lineinfile: dest=/etc/sysctl.conf line="net.ipv4.tcp_keepalive_probes = 10"

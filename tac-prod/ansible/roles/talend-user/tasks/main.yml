@@ -1,0 +1,13 @@
+---
+- name: create group syslog
+  command: groupadd syslog
+- name: change group of logs directory
+  command: chgrp -R syslog /var/log/
+- name: add user talend
+  command: useradd talend
+- name: add group to talend user
+  command: usermod -aG syslog,tomcat talend
+- name: modify tomcat config to use talend user
+  copy: src=tomcat8.conf dest=/etc/tomcat8/ owner=talend group=tomcat
+- name: modify owner 
+  command: chown talend:tomcat /etc/tomcat8/tomcat8.conf

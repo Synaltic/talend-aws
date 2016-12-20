@@ -1,0 +1,55 @@
+#!/bin/bash
+# chkconfig: 345 91 10
+# description: D&eacute;marre et arr&ecirc;te le d&eacute;mon JobServer.
+#
+# Source function library.
+. /etc/rc.d/init.d/functions
+ 
+# Get config.
+. /etc/sysconfig/network
+
+# Check that networking is up.
+[ "${NETWORKING}" = "no" ] && exit 0
+ 
+user=ec2-user
+jobserver=/opt/jobserver/Talend-JobServer-20160704_1411-V6.2.1
+startup=start_rs.sh
+shutdown=stop_rs.sh
+ 
+ 
+start(){
+ echo -n $"Starting jobserver service: "
+ su - $user -c "cd $jobserver && sh $startup &"
+ RETVAL=$?
+ echo
+}
+ 
+stop(){
+ echo -n $ "Stopping jobserver service: "
+ su - $user -c  "cd $jobserver && sh $shutdown"
+ RETVAL=$?
+ echo
+}
+ 
+restart() {
+ stop
+ start
+}
+ 
+# See how we were called.
+case "$1" in
+start)
+ start
+ ;;
+stop)
+ stop
+ ;;
+restart)
+ restart
+ ;;
+*)
+ echo $"Usage: $0 {start|stop|restart}"
+ exit 1
+esac
+ 
+exit 0

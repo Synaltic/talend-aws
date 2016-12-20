@@ -1,0 +1,28 @@
+---
+- name: Make filesystem for opt
+  filesystem: fstype=ext4 dev=/dev/sdb
+  sudo: True
+
+- name: mount opt fs
+  mount: name=/opt src=/dev/sdb fstype=ext4 state=mounted
+  sudo: True
+
+- name: Create swap space
+  command: dd if=/dev/zero of=/swap-file bs=1M count=2048
+  sudo: True
+
+- name: Make swap
+  command: mkswap /swap-file
+  sudo: True
+
+- name: Add to fstab
+  action: lineinfile dest=/etc/fstab regexp="swap-file" line="/swap-file none swap sw 0 0" state=present
+  sudo: True
+
+- name: Turn swap on
+  command: swapon -a
+  sudo: True
+
+- name: Set swapiness
+  shell: echo 0 | sudo tee /proc/sys/vm/swappiness
+  sudo: True

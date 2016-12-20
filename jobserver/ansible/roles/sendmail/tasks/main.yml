@@ -1,0 +1,8 @@
+---
+- name: install sendmail
+  yum: name=sendmail
+  sudo: True
+
+- name: configure sendmail
+  replace: dest=/etc/mail/sendmail.cf regexp='^DS$' replace='DSsmtp1'
+  sudo: True

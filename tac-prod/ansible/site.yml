@@ -1,0 +1,18 @@
+---
+ - hosts: 127.0.0.1
+   sudo: yes
+   connection: local
+
+   roles:
+    - ec2-user
+    - partitionnement
+    - sysctl
+    - locale
+    - rsyslog
+    - network
+    - sysctl
+    - aws-cli
+    - java
+    - tools
+    - tomcat8
+    - talend-user

@@ -1,0 +1,4 @@
+---
+- name: Copy rsyslog config file
+  copy: src=rsyslog.conf dest=/etc/rsyslog.conf force=yes
+  sudo: True

@@ -1,0 +1,29 @@
+---
+- name: Install apache
+  yum: name=httpd
+  sudo: True
+
+- name: Start apache at boot
+  service: name=httpd enabled=yes
+  sudo: True
+
+- name: Copy vhost definition
+  copy: src=httpd.conf dest=/etc/httpd/conf/httpd.conf force=yes
+  sudo: True
+
+- name: Install plist fetching script
+  copy: src=get-vitrines-plist.sh dest=/usr/local/bin/ mode=755
+  sudo: True
+
+- name: Install jq
+  yum: name=jq
+  sudo: True
+
+- name: touch plist file
+  file: path=/var/www/rewritevitrine.txt mode=666 state=touch
+  sudo: True
+
+- name: Schedule plist recuperation
+  cron: name="fetch plist file" minute=0 job="/usr/local/bin/get-vitrines-plist.sh"
+  sudo: True
+

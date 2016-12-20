@@ -1,0 +1,13 @@
+---
+- name: Install tomcat 8
+  yum: name=tomcat8
+  sudo: True
+- name: Create symbolic link to tomcat home
+  file: src=/usr/share/tomcat8 dest=/opt/tomcat state=link
+- name: Create directory endorsed
+  file: path=/opt/tomcat/endorsed state=directory owner=tomcat group=tomcat
+- name: Copy mysql driver
+  copy: src=mysql-connector-java-5.1.39-bin.jar dest=/opt/tomcat/lib owner=tomcat group=tomcat
+- name: define tomcat on system boot
+  command: chkconfig --add tomcat8
+- command: chkconfig --level 234 tomcat8 on

@@ -1,0 +1,141 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Stack DB for DB_TAC",
+
+    "Parameters": {
+		
+		"TagEnv":{
+         "Description":"Tag Environment (dev, rec or prod)",
+         "Type":"String",
+         "Default":"dev",
+         "AllowedValues":[ "dev", "rec",  "prod" ],
+         "ConstraintDescription": "Must be dev, rec or prod."
+      },
+
+        "DbInstanceType": {
+            "Description": "Instance type for DB",
+            "Type": "String",
+            "Default": "db.t2.small",
+            "AllowedValues": [ "db.t2.small", "db.t2.medium", "db.m3.medium", "db.m3.large" ]
+        },
+
+        "DbMasterUsername": {
+            "Description": "Username for DB",
+            "Type": "String",
+            "Default": "root"
+        },
+
+        "DbMasterPassword": {
+            "Description": "Password for DB",
+            "Type": "String",
+            "Default": "azerty123"
+        },
+
+        "DbMultiAz": {
+            "Description": "Should DB run in Multi-AZ ?",
+            "Type": "String",
+            "Default": "false",
+            "AllowedValues": [ "true", "false" ]
+        },
+
+        "DbSubnetIds": {
+            "Description": "List of Subnet Ids for DBTAC Database",
+            "Type": "CommaDelimitedList",
+            "Default": "subnet-e043b58b,subnet-1e797675,subnet-fc797697"
+        },
+
+         "UseDbSnapshot": {
+            "Description": "Set to true if you want to use DB snapshot",
+            "Type": "String",
+            "Default": "false",
+            "AllowedValues": [ "true", "false" ]
+        },
+
+         "DbSnapshotId": {
+            "Description": "Database snapshot to create the DB from. If empty, create an empty DB",
+            "Type": "String",
+            "Default": ""
+        }
+    },
+ "Mappings" : {
+       "EnvMap" : {
+                       "dev" : { "keyName": "aws_key_dev", "availabilityZones": ["eu-west-1b"], "DBTACSecurityGroup": "sg-044c4661", "VPC": "vpc-bc5badd7" },
+                       "rec" : { "keyName": "aws_key_rec", "availabilityZones": ["eu-west-1c"], "DBTACSecurityGroup": "sg-13383376", "VPC": "vpc-cb11eaa0" },
+                       "prod": {"keyName": "aws_key_prod", "availabilityZones": ["eu-west-1a"], "DBTACSecurityGroup": "", "VPC": "vpc-f283b39a"}
+               }
+  },
+
+    "Resources": {
+        "DBTAC": {
+            "Type": "AWS::RDS::DBInstance",
+            "Properties": {
+                "AllocatedStorage": "5",
+                "DBInstanceClass": {"Ref": "DbInstanceType"},
+                "Engine": "MySQL",
+                "MasterUsername": {"Ref": "DbMasterUsername"},
+                "MasterUserPassword": {"Ref": "DbMasterPassword"},
+                "MultiAZ": {"Ref": "DbMultiAz"},
+                "DBName": "db_tac",
+                "DBInstanceIdentifier" : {
+                    "Fn::Join": [ "-", [ "db-tac", {"Ref": "TagEnv"} ] ]
+                },
+                "Port": "3306",
+                "DBSnapshotIdentifier": {"Ref": "DbSnapshotId"},
+                "VPCSecurityGroups": [{"Ref": "DBSecurityGroup"}],
+                "DBSubnetGroupName": {"Ref": "DbSubnetGroupDBTAC"},
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [ "-", [ "db-tac", {"Ref": "TagEnv"} ] ]
+                        }
+                    }
+                ]
+            },
+            "DeletionPolicy": "Snapshot"
+        },
+
+        "DBSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Ingress for Amazon EC2 security group",
+                "VpcId": {
+										
+                   "Fn::FindInMap" : ["EnvMap", { "Ref" : "TagEnv" }, "VPC" ]    
+					
+					},
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "3306",
+                        "ToPort": "3306",
+                        "SourceSecurityGroupId": { 				
+							"Fn::FindInMap" : ["EnvMap", { "Ref" : "TagEnv" }, "DBTACSecurityGroup" ]  
+							}
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "3306",
+                        "ToPort": "3306",
+                        "CidrIp": "10.150.100.0/22"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "3306",
+                        "ToPort": "3306",
+                        "CidrIp": "10.150.200.0/22"
+                    }
+                ]
+            }
+        },
+
+        "DbSubnetGroupDBTAC": {
+            "Type": "AWS::RDS::DBSubnetGroup",
+            "Properties": {
+                "DBSubnetGroupDescription": "DB subnet for COTE",
+                "SubnetIds": {"Ref": "DbSubnetIds"}
+            }
+        }
+    }
+}
+

@@ -1,0 +1,41 @@
+---
+- name: Create config directory
+  file: path=/etc/logstash state=directory mode=0755
+
+- name: Copy config file
+  template: src=logstash.conf dest=/etc/logstash/ mode=0644
+
+- name: Copy init script
+  template: src=logstash.init dest=/etc/init.d/logstash mode=0755
+
+- name: Copy logrotate config
+  template: src=logrotate.conf dest=/etc/logrotate.d/talend mode=0644
+
+- name: Add user "logstash"
+  user: name={{ logstash_user }} createhome=no shell=/bin/bash
+
+- name: Download logstash archive
+#  s3 : bucket=applications.dev object=/logstash/{{ logstash_version }}/logstash-{{ logstash_version }}.tar.gz dest={{ logstash_dir }}-{{ logstash_version}}.tar.gz mode=get
+  get_url: dest={{ logstash_dir }}-{{ logstash_version}}.tar.gz url=https://download.elasticsearch.org/logstash/logstash/logstash-{{logstash_version}}.tar.gz 
+
+- name: Unpack logstash
+# dest = /opt/ sucks.
+  unarchive: copy=no creates={{ logstash_dir }}-{{ logstash_version}} src={{ logstash_dir }}-{{ logstash_version}}.tar.gz dest=/opt/ owner={{ logstash_user }} group={{ logstash_user }}
+
+- name: Chown logstash because unarchive's chown seems bugged
+  file: path={{ logstash_dir }}-{{ logstash_version}} recurse=yes owner={{ logstash_user }} group={{ logstash_user }}
+
+- name: Create a symbolic link to logstash directory
+  file: src={{ logstash_dir }}-{{ logstash_version}} dest={{ logstash_dir }} state=link
+
+- name: Create logstash log dir
+  file: path=/var/log/logstash owner={{ logstash_user }} group={{ logstash_user }} state=directory mode=0755
+
+- name: Create logstash run dir
+  file: path=/var/run/logstash owner={{ logstash_user }} group={{ logstash_user }} state=directory
+
+- name: Create logstash tmp dir
+  file: path=/var/tmp/logstash owner={{ logstash_user }} group={{ logstash_user }} state=directory mode=0700
+
+- name: Set logstash service on
+  service: name=logstash enabled=yes state=started

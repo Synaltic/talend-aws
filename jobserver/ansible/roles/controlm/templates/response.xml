@@ -1,0 +1,12 @@
+<AutomatedInstallation langpack="eng">
+    <target.product>Control-M/Agent 8.0.00</target.product>
+    <agent.parameters>
+        <entry key="field.Authorized.Controlm.Server.Host" value="{{authorized_serv_host}}"/>
+        <entry key="ctm_agent.Tracker.Event.Port" value="7035"/>
+        <entry key="field.Agent.To.Server.Port.Number" value="{{atos_port}}"/>
+        <entry key="ctm_agent.Tcp_ip.Timeout" value="60"/>
+        <entry key="field.Server.To.Agent.Port.Number" value="{{stop_port}}"/>
+        <entry key="Ignore.Disabling.Agent.Failure" value="false"/>
+        <entry key="field.Primary.Controlm.Server.Host" value="{{prim_serv_host}}"/>
+    </agent.parameters>
+</AutomatedInstallation>

@@ -1,0 +1,10 @@
+---
+stats_log_file: "/tmp/logs_talend/talend_jobs_stats.csv"
+jobs_log_file: "/tmp/logs_talend/talend_jobs_logs.csv"
+meters_log_file: "/tmp/logs_talend/talend_jobs_meters.csv"
+talend_user: "ec2-user"
+talend_group: "ec2-user"
+logstash_dir: "/opt/logstash"
+logstash_user: "logstash"
+logstash_group: "logstash"
+logstash_version: "1.4.2"

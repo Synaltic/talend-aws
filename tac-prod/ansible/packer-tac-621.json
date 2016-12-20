@@ -1,0 +1,53 @@
+{
+  "variables": {
+    "aws_access_key": "",
+    "aws_secret_key": "",
+    "ami-id": "ami-f9dd458a",
+	"aws_username": "ec2-user"
+	
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "ssh_pty": "true",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "region": "eu-west-1",
+    "source_ami": "{{user `ami-id`}}",
+    "instance_type": "t2.micro",
+    "ssh_username": "{{user `aws_username`}}",
+    "ami_name": "Stats-tac-621-ami-{{isotime | clean_ami_name}}",
+    "vpc_id": "vpc-bc5badd7",
+    "subnet_id": "subnet-e043b58b",
+    "iam_instance_profile": "ami-builder", 
+	 "launch_block_device_mappings": [
+      {
+        "device_name": "/dev/xvda",
+        "delete_on_termination": "true",
+        "volume_size": "50",
+		  "volume_type": "standard"
+      }
+    ],
+	
+    "tags":  {
+      "Name": "Stats-tac-621-ami-{{isotime | clean_ami_name}}",
+      "Bloc": "Stats",
+      "CreationDt": "{{isotime}}"
+    }
+  }],
+  "provisioners": [ 
+    {
+      "type": "shell",
+      "inline": [
+        "sudo yum install python26-pip -y",
+        "sudo pip install ansible"
+      ],
+      "pause_before": "10s"
+    },
+    {
+      "type": "ansible-local",
+      "playbook_file": "site.yml",
+      "playbook_dir": ".",
+      "pause_before": "10s"
+    }
+  ]
+}

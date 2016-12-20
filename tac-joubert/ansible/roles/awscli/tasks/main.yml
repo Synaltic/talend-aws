@@ -1,0 +1,7 @@
+---
+- name: get pip
+  command: curl -O https://bootstrap.pypa.io/get-pip.py
+- name: install pip
+  command: python get-pip.py
+- name: install awscli from pip
+  command: pip install awscli

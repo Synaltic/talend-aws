@@ -1,0 +1,17 @@
+---
+ - hosts: 127.0.0.1
+   sudo: yes
+   connection: local
+
+   roles:
+    - ec2-user
+    - partitionnement
+#    - network
+    - sysctl
+#    - controlm
+    - java
+    - locale
+    - tools
+    - jobserver
+    - logstash
+    - aws-cli

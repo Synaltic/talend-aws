@@ -1,0 +1,14 @@
+---
+- name: UnInstall OpenJDK 7
+  yum: name=java-1.7.0-openjdk state=absent
+  sudo: True
+- name: download oracle java jre 8u101
+  shell: wget -Ojre-8u101-linux-x64.tar.gz --no-check-certificate --no-cookies -c http://javadl.oracle.com/webapps/download/AutoDL?BundleId=211989
+- name: unzip oracle java jre 8u101
+  command: tar xzf jre-8u101-linux-x64.tar.gz -C /opt/
+- name: install oracle jre 8u101
+  command: alternatives --install /usr/bin/java java /opt/jre1.8.0_101/bin/java 2
+- name: configure oracle jre 8u101
+  command: alternatives --set java /opt/jre1.8.0_101/bin/java
+- name: delete java installation file
+  command: rm jre-8u101-linux-x64.tar.gz

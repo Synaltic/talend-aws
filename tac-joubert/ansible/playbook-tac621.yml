@@ -1,0 +1,14 @@
+---
+- hosts: localhost
+  remote_user: root
+  vars:
+     awsenv:
+         AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY }}"
+         AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_KEY }}"
+         AWS_DEFAULT_REGION: "eu-west-1"
+     mysql_pwd: "{{ MYSQL_DEFAULT_PASSWORD|default('root4Talend!') }}"
+  roles:
+     - awscli
+     - java
+     - mysql
+     - talend-tac-full

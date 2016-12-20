@@ -1,0 +1,9 @@
+---
+- name: set instance locale to Europe/Paris
+  replace: dest=/etc/sysconfig/clock regexp='ZONE=".*"' replace='ZONE="Europe/Paris"'
+  #raw: sed -i.bak 's/ZONE=".*"/ZONE="Europe/Paris"/g' /etc/sysconfig/clock
+  sudo: True
+
+- name: set localtime
+  file: src=/usr/share/zoneinfo/Europe/Paris dest=/etc/localtime state=link force=yes
+  sudo: True

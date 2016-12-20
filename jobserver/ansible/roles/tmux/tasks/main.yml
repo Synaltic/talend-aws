@@ -1,0 +1,7 @@
+---
+- name: Install tmux
+  yum: name=tmux
+  sudo: True
+
+- name: copy config file
+  copy: src=tmux.conf dest=/home/ec2-user/.tmux.conf

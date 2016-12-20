@@ -1,0 +1,296 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Stack TAC",
+
+  "Parameters": {
+    "AMI": {
+      "Description": "Base AMI",
+      "Type": "String",
+      "Default": "ami-56a6dd25",
+      "ConstraintDescription": "Must be a valid AMI ID."
+    },
+
+    "TacEc2Type": {
+      "Description": "EC2 instance type for TAC",
+      "Type": "String",
+      "Default": "m3.large",
+      "AllowedValues": [ "t2.medium","m3.medium","m3.large","c3.large","m3.xlarge","c3.xlarge" ],
+      "ConstraintDescription": "Must be a valid EC2 instance type."
+    },
+
+    "Environment": {
+      "Description": "Environment (dev, rec or prod)",
+      "Type": "String",
+      "Default": "dev",
+      "AllowedValues": [
+        "dev",
+        "rec",
+        "prod"
+      ],
+
+      "ConstraintDescription": "Must be dev, rec or prod."
+    },
+
+    "InstancesCount": {
+      "Description": "Number of instances",
+      "Type": "Number",
+      "Default": "1",
+      "MinValue": "1"
+    }
+  },
+  "Mappings" : {
+       "EnvMap" : {
+                       "dev"  : {"VPC":"vpc-bc5badd7", "subnetId" : ["subnet-e043b58b"], "KernelId":"aki-71665e05", "availabilityZones": ["eu-west-1b"], "keyName": "aws_key_dev", "securityGroupSSH": "sg-a7b152c8", "SecurityStatsjobExc": "sg-044c4661","TomcatJoubertAws":"sg-1ed23171"},
+                       "rec"  : {"VPC":"vpc-cb11eaa0", "subnetId" : ["subnet-e9cc8582"], "KernelId":"aki-71665e05", "availabilityZones": ["eu-west-1c"], "keyName": "aws_key_prod", "securityGroupSSH": "sg-8f0be3e0", "SecurityStatsjobExc": "sg-13383376","TomcatJoubertAws":"sg-25af444a"},
+                       "prod" : {"VPC":"vpc-f283b39a", "subnetId" : ["subnet-cd83b3a5"], "KernelId":"aki-71665e05", "availabilityZones": ["eu-west-1a"], "keyName": "aws_key_prod", "securityGroupSSH": "sg-243cdc4b", "SecurityStatsjobExc": "sg-250fb141","TomcatJoubertAws":"sg-40a54a2f"}
+               }
+  },
+  "Resources": {
+	 "TacSecurityGroup": {
+		"Type": "AWS::EC2::SecurityGroup",
+		"Properties": {
+			"GroupDescription": "Security group for Spice instances",
+			"VpcId": {"Fn::FindInMap" : ["EnvMap", { "Ref" : "Environment" }, "VPC" ]},
+			"SecurityGroupIngress": [
+					{"IpProtocol": "tcp","FromPort": "9200","ToPort": "9300","CidrIp" : "10.150.100.0/22"  },
+					{"IpProtocol": "tcp","FromPort": "9200","ToPort": "9300","CidrIp" : "10.150.200.0/22"  },
+					{"IpProtocol": "tcp","FromPort": "9200","ToPort": "9300","CidrIp" : "10.150.150.24/32" }
+					
+			]
+		}
+	},
+    "TacIAMRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "accessCloudFormation",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudformation:DescribeStacks",
+                    "cloudformation:DescribeStackEvents",
+                    "cloudformation:DescribeStackResource",
+                    "cloudformation:DescribeStackResources"
+                  ],
+                  "Resource": "*"
+                }
+				
+              ]
+            }
+          },
+          {
+            "PolicyName": "TacASGAccess",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "autoscaling:DescribeAutoScalingGroups"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          },
+		  {
+            "PolicyName": "StatsDataBucketAccess",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Resource": [
+                     "arn:aws:s3:::stats-data*"
+                  ],
+                  "Action": [
+                    "s3:ListBucket",
+                    "s3:GetObject",
+                    "s3:DeleteObject",
+                    "s3:PutObject"
+                  ]
+                },
+				{
+					"Effect": "Allow", "Action": ["s3:ListBucket", "s3:GetObject"],
+					"Resource": [
+						{ "Fn::Join": [ "", [ "arn:aws:s3:::repository.", { "Ref": "Environment" } ] ] },
+						{ "Fn::Join": [ "", [ "arn:aws:s3:::repository.", { "Ref": "Environment" }, "/*" ] ] }
+					]
+				},
+				{
+					"Effect": "Allow", "Action": ["s3:ListBucket", "s3:GetObject"],
+					"Resource": [
+						{ "Fn::Join": [ "", [ "arn:aws:s3:::applications.", { "Ref": "Environment" } ] ] },
+						{ "Fn::Join": [ "", [ "arn:aws:s3:::applications.", { "Ref": "Environment" }, "/*" ] ] }
+					]
+				}
+              ]
+            }
+          }
+		 ]
+		}
+    },
+    "TacInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "TacIAMRole"
+          }
+        ]
+      }
+    },
+	"TacLB": {
+		"Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+		"Properties": {
+			"SecurityGroups": [
+			  {
+			   "Fn::FindInMap" : ["EnvMap", { "Ref" : "Environment" }, "SecurityStatsjobExc" ]
+			  }
+			],
+			"Listeners": [
+				{
+					"LoadBalancerPort": "8080",
+					"InstancePort": "8080",
+					"Protocol": "TCP"
+				},
+				{
+					"LoadBalancerPort": "80",
+					"InstancePort": "80",
+					"Protocol": "TCP"
+				},
+								{
+					"LoadBalancerPort": "9300",
+					"InstancePort": "9300",
+					"Protocol": "TCP"
+				},
+				{
+					"LoadBalancerPort": "9200",
+					"InstancePort": "9200",
+					"Protocol": "TCP"
+				}			
+			],
+			"Subnets":  { "Fn::FindInMap" : ["EnvMap", { "Ref" : "Environment" }, "subnetId" ] },
+			"Scheme": "internal"
+		}
+	},
+	"TacjobLaunchConfig": {
+		"Type": "AWS::AutoScaling::LaunchConfiguration",
+		"Properties": {
+			"IamInstanceProfile": { "Ref": "TacInstanceProfile" },
+			"ImageId": { "Ref": "AMI" },
+			"InstanceType": { "Ref": "TacEc2Type" },
+			"KeyName": { "Fn::FindInMap" : ["EnvMap", { "Ref" : "Environment" }, "keyName" ] },
+			"SecurityGroups": [ 
+			    { "Ref" : "TacSecurityGroup" },
+				{ "Fn::FindInMap" : ["EnvMap", { "Ref" : "Environment" }, "SecurityStatsjobExc" ] },
+				{ "Fn::FindInMap" : ["EnvMap", { "Ref" : "Environment" }, "securityGroupSSH" ] },
+				{"Fn::FindInMap" : ["EnvMap", { "Ref" : "Environment" },"TomcatJoubertAws"]}
+			],
+			"UserData": {
+			  "Fn::Base64": {
+				"Fn::Join": [
+				  "",
+				  [
+					"#!/bin/bash -v\n",
+					"function main() {\n",
+					"set -x\n",
+					"echo 127.0.0.1 `hostname` >> /etc/hosts\n",
+					"chmod 777 /tmp\n",
+					"chmod -t /tmp\n",
+					"/opt/aws/bin/cfn-init --region ",
+					{
+					  "Ref": "AWS::Region"
+					},
+					" -s ",
+					{
+					  "Ref": "AWS::StackName"
+					},
+					" -r TacjobLaunchConfig\n",
+					"sudo sh /home/ec2-user/tac-621.sh\n",
+					"} 2> /tmp/userdata-error.log 1> /tmp/userdata.log\n",
+					"\n",
+					"main"
+				  ]
+				]
+			  }
+			}
+		},
+		"Metadata": {
+                "Description": "Start tomcat and sends configuration files to their correct directories",
+                "AWS::CloudFormation::Init": {
+                    "config": {
+                        "files": {
+                            "/home/ec2-user/tac-621.sh": {
+                                "source": { "Fn::Join": [ "", [ "https://s3-eu-west-1.amazonaws.com/repository.", { "Ref": "Environment" }, "/conf/talend/tac-621.sh" ] ] },
+                                "group": "ec2-user",
+                                "mode": "000600",
+                                "owner": "ec2-user",
+                                "authentication": "S3AccessCreds",
+                                "context": {
+                                    "environment": { "Ref": "Environment" },
+                                    "region": { "Ref": "AWS::Region" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "AWS::CloudFormation::Authentication": {
+                    "S3AccessCreds": {
+                        "type": "S3",
+                        "roleName": { "Ref": "TacIAMRole" },
+                        "buckets": [ { "Fn::Join": [ "", [ "repository.", { "Ref": "Environment" }]] } ]
+                    }
+                }
+        }
+	},
+
+	"TacjobAutoScalingGroup": {
+		"Type": "AWS::AutoScaling::AutoScalingGroup",
+		"Properties": {
+			"LaunchConfigurationName": {
+				"Ref": "TacjobLaunchConfig"
+			},
+			"AvailabilityZones": { "Fn::FindInMap" : ["EnvMap", { "Ref" : "Environment" }, "availabilityZones" ] },
+			"MinSize": { "Ref": "InstancesCount" },
+			"MaxSize": { "Ref": "InstancesCount" },
+			"DesiredCapacity": { "Ref": "InstancesCount" },
+			"VPCZoneIdentifier": { "Fn::FindInMap" : ["EnvMap", { "Ref" : "Environment" }, "subnetId" ] },
+			"LoadBalancerNames": [ { "Ref": "TacLB" } ],
+			"HealthCheckType": "EC2",
+			"HealthCheckGracePeriod": 300,
+			"Tags": [ 
+				{ "Key": "Name", "Value": { "Fn::Join": [ "", [ "TAC6-", { "Ref": "Environment" }]] }, "PropagateAtLaunch": "true" },
+				{ "Key":"environnement","Value":{"Ref":"Environment"},"PropagateAtLaunch":"true"},
+                { "Key":"composant", "Value":"","PropagateAtLaunch":"true"},
+                { "Key":"applicatif", "Value":"", "PropagateAtLaunch":"true" },
+                { "Key":"bloc", "Value":"stats", "PropagateAtLaunch":"true"  }
+			]
+		}
+	}
+  },
+  "Outputs": {
+	  "LoadBalancerStatsJob": {
+		"Value": { "Ref": "TacLB"},
+		"Description": "Tac Load balancer"
+	}
+  }
+}

@@ -1,0 +1,4 @@
+---
+aws_cli_user: 'ec2-user'
+aws_output_format: 'json'
+aws_region: 'eu-west-1'

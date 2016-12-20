@@ -1,0 +1,5 @@
+---
+- name: Add aws-key-dev to ec2-user
+  authorized_key: user=ec2-user
+                  key='ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCZ8bFWs/JkcEQM6QuExvrGt3kwjWJkPZTUwI9hIZRp7fsMfShcGxu4Z9QsG5Gxt3AClGA88zjybV+njj2ykDZXW6h04ObEgTQcdF+rxqXwULKgWy2hvvlBaF3k4I5JU5fPQsEXSvCF/+QK6GLBFA5TdlloHLA5Qin2UPH+xBtG4hUrXBdDyJdNlRpCQs46fHRkOLb5iP0Lguez/K9nSCRa3UxDRSbxMz3pqACAgHGi8Zz2GlP83TwGdHawbwVhyYO6tkqijBhPxovbzdkUfjUJG4AAM92EKLH+E3lyR/fAKfyblQg3VLnjDjyOxDB8ou3LnFpMcCLUvMnD0tbuRB0n aws_key_dev'
+  sudo: True

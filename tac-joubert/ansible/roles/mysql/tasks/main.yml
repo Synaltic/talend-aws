@@ -1,0 +1,21 @@
+---
+- name: Install the MySQL packages
+  yum: name=http://repo.mysql.com//mysql57-community-release-el6-9.noarch.rpm state=present
+- yum: name=mysql-community-server state=installed
+- yum: name=libselinux-python state=installed
+- name: Start service for initialize
+  service: name=mysqld state=started
+- name: stop service
+  service: name=mysqld state=stopped
+- name: Change password of root account
+  file: path=/opt/mysql-init state=touch owner=mysql
+- lineinfile: dest=/opt/mysql-init line="SET PASSWORD FOR 'root'@'localhost' = PASSWORD('{{ mysql_pwd }}');"
+- shell: mysqld_safe --init-file=/opt/mysql-init &
+- name: Stop mysqld
+  service: name=mysqld state=stopped
+- name: remove init file
+  file: path=/opt/mysql-init state=absent
+- name: Start mysql at system boot
+  service: name=mysqld enabled=yes
+- name: Start mysqld
+  service: name=mysqld state=started

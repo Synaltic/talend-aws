@@ -1,0 +1,14 @@
+---
+- name: UnInstall OpenJDK 7
+  yum: name=java-1.7.0-openjdk state=absent
+  sudo: True
+- name: copy oracle java jre 8u101
+  copy: src=jre-8u101-linux-x64.tar.gz dest=/opt/
+- name: unzip oracle java jre 8u101
+  command: tar xzf /opt/jre-8u101-linux-x64.tar.gz -C /opt/
+- name: install oracle jre 8u101
+  command: alternatives --install /usr/bin/java java /opt/jre1.8.0_101/bin/java 2
+  become: true
+- name: configure oracle jre 8u101
+  command: alternatives --set java /opt/jre1.8.0_101/bin/java
+  become: true
